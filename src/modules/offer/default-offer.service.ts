@@ -50,8 +50,8 @@ export class DefaultOfferService implements OfferService {
       .exec();
   }
 
-  public async findFavorites(): Promise<DocumentType<OfferEntity>[]> {
-    return this.offerModel.find({isFavorite: true})
+  public async findFavorites(ids: string[]): Promise<DocumentType<OfferEntity>[]> {
+    return this.offerModel.find({_id: {$in: ids}})
       .sort({postDate: -1})
       .populate('author')
       .exec();
@@ -63,14 +63,6 @@ export class DefaultOfferService implements OfferService {
     }
 
     return this.offerModel.findByIdAndUpdate(offerId, data, {new: true}).populate('author').exec();
-  }
-
-  public async updateFavoriteStatus(offerId: string, isFavorite: boolean): Promise<DocumentType<OfferEntity> | null> {
-    if (!isValidObjectId(offerId)) {
-      return null;
-    }
-
-    return this.offerModel.findByIdAndUpdate(offerId, {isFavorite}, {new: true}).populate('author').exec();
   }
 
   public async deleteById(offerId: string): Promise<DocumentType<OfferEntity> | null> {

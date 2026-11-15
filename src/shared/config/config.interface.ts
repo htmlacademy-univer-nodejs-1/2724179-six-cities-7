@@ -1,6 +1,7 @@
 export type AppConfig = {
   PORT: number;
   DB_HOST: string;
+  DB_URI: string;
   SALT: string;
 };
 

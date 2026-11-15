@@ -1,6 +1,7 @@
 import {DocumentType, ReturnModelType} from '@typegoose/typegoose';
 import {inject, injectable} from 'inversify';
 import {isValidObjectId} from 'mongoose';
+import {hashPassword} from '../../shared/auth/password.js';
 import {Component} from '../../shared/container/component.js';
 import {CreateUserDto} from './create-user.dto.js';
 import {UserEntity} from './user.entity.js';
@@ -14,7 +15,7 @@ export class DefaultUserService implements UserService {
   ) {}
 
   public async create(data: CreateUserDto): Promise<DocumentType<UserEntity>> {
-    return this.userModel.create(data);
+    return this.userModel.create({...data, password: await hashPassword(data.password)});
   }
 
   public async findById(userId: string): Promise<DocumentType<UserEntity> | null> {

@@ -1,4 +1,8 @@
+import {FavoriteController} from '../../modules/favorite/favorite.controller.js';
+import {AuthService} from '../auth/auth.service.js';
 import {Container} from 'inversify';
+import {OfferController} from '../../modules/offer/offer.controller.js';
+import {UserController} from '../../modules/user/user.controller.js';
 import {Application} from '../../application.js';
 import {CommentEntity, CommentModel} from '../../modules/comment/comment.entity.js';
 import {CommentService} from '../../modules/comment/comment-service.interface.js';
@@ -30,3 +34,8 @@ container.bind<ReturnModelType<typeof OfferEntity>>(Component.OfferModel).toCons
 container.bind<OfferService>(Component.OfferService).to(DefaultOfferService).inSingletonScope();
 container.bind<ReturnModelType<typeof CommentEntity>>(Component.CommentModel).toConstantValue(CommentModel);
 container.bind<CommentService>(Component.CommentService).to(DefaultCommentService).inSingletonScope();
+
+container.bind<OfferController>(Component.OfferController).to(OfferController).inSingletonScope();
+container.bind<UserController>(Component.UserController).to(UserController).inSingletonScope();
+container.bind<AuthService>(Component.AuthService).to(AuthService).inSingletonScope();
+container.bind<FavoriteController>(Component.FavoriteController).to(FavoriteController).inSingletonScope();

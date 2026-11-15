@@ -14,6 +14,13 @@ export const configSchema: Schema<AppConfig> = {
     default: null,
     env: 'DB_HOST'
   },
+  DB_URI: {
+    doc: 'Строка подключения к MongoDB (необязательно)',
+    format: String,
+    default: '',
+    env: 'DB_URI',
+    sensitive: true
+  },
   SALT: {
     doc: 'Соль для паролей',
     format: (value: unknown) => {
