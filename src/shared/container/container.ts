@@ -1,3 +1,4 @@
+import {CommentController} from '../../modules/comment/comment.controller.js';
 import {FavoriteController} from '../../modules/favorite/favorite.controller.js';
 import {AuthService} from '../auth/auth.service.js';
 import {Container} from 'inversify';
@@ -39,3 +40,5 @@ container.bind<OfferController>(Component.OfferController).to(OfferController).i
 container.bind<UserController>(Component.UserController).to(UserController).inSingletonScope();
 container.bind<AuthService>(Component.AuthService).to(AuthService).inSingletonScope();
 container.bind<FavoriteController>(Component.FavoriteController).to(FavoriteController).inSingletonScope();
+
+container.bind<CommentController>(Component.CommentController).to(CommentController).inSingletonScope();

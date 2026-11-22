@@ -1,4 +1,5 @@
 export const Component = {
+  CommentController: Symbol.for('CommentController'),
   FavoriteController: Symbol.for('FavoriteController'),
   AuthService: Symbol.for('AuthService'),
   OfferController: Symbol.for('OfferController'),

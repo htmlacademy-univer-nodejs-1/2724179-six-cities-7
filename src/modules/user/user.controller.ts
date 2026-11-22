@@ -9,6 +9,8 @@ import {AuthService} from '../../shared/auth/auth.service.js';
 import {verifyPassword} from '../../shared/auth/password.js';
 import {Component} from '../../shared/container/component.js';
 import {Controller} from '../../shared/controller/controller.js';
+import {ValidateMiddleware} from '../../shared/middleware/validate.middleware.js';
+import {createUserSchema, loginUserSchema} from '../../shared/middleware/schemas.js';
 import {HttpError} from '../../shared/errors/http-error.js';
 import {CreateUserDto} from './create-user.dto.js';
 import {LoginUserDto} from './login-user.dto.js';
@@ -25,17 +27,14 @@ export class UserController extends Controller {
   ) {
     super();
     this.addRoutes([
-      {path: '/users/register', method: 'post', middleware: [upload.single('avatar')], handler: this.register},
-      {path: '/users/login', method: 'post', handler: this.login},
+      {path: '/users/register', method: 'post', middleware: [{execute: upload.single('avatar')}, new ValidateMiddleware(createUserSchema)], handler: this.create},
+      {path: '/users/login', method: 'post', middleware: [new ValidateMiddleware(loginUserSchema)], handler: this.login},
       {path: '/users/logout', method: 'delete', handler: this.logout},
       {path: '/users/status', method: 'get', handler: this.status}
     ]);
   }
 
-  private async register(req: Request<ParamsDictionary, object, CreateUserDto>, res: Response): Promise<void> {
-    if (await this.auth.optional(req)) {
-      throw new HttpError(StatusCodes.FORBIDDEN, 'Регистрация доступна только анонимным пользователям');
-    }
+  private async create(req: Request<ParamsDictionary, object, CreateUserDto>, res: Response): Promise<void> {
     const {name, email, password, type} = req.body;
     if (await this.users.findByEmail(email)) {
       throw new HttpError(StatusCodes.CONFLICT, 'Пользователь с таким email уже существует');
@@ -77,14 +76,14 @@ export class UserController extends Controller {
   }
 
   private async logout(req: Request, res: Response): Promise<void> {
-    const {user, sessionId} = await this.auth.require(req);
+    const {user, sessionId} = await this.auth.current(req);
     user.sessions = user.sessions.filter((id) => id !== sessionId);
     await user.save();
     this.noContent(res);
   }
 
   private async status(req: Request, res: Response): Promise<void> {
-    const {user} = await this.auth.require(req);
+    const {user} = await this.auth.current(req);
     this.ok(res, toUser(user.toObject({virtuals: true})));
   }
 }

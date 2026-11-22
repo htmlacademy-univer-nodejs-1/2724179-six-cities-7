@@ -1,5 +1,6 @@
 import express, {Express} from 'express';
 import {inject, injectable} from 'inversify';
+import {CommentController} from './modules/comment/comment.controller.js';
 import {FavoriteController} from './modules/favorite/favorite.controller.js';
 import {OfferController} from './modules/offer/offer.controller.js';
 import {UserController} from './modules/user/user.controller.js';
@@ -19,7 +20,8 @@ export class Application {
     @inject(Component.DatabaseClient) private readonly database: DatabaseClient,
     @inject(Component.OfferController) private readonly offerController: OfferController,
     @inject(Component.UserController) private readonly userController: UserController,
-    @inject(Component.FavoriteController) private readonly favoriteController: FavoriteController
+    @inject(Component.FavoriteController) private readonly favoriteController: FavoriteController,
+    @inject(Component.CommentController) private readonly commentController: CommentController
   ) {}
 
   private registerMiddleware(): void {
@@ -33,7 +35,7 @@ export class Application {
     const uri = this.config.get('DB_URI') || `mongodb://${this.config.get('DB_HOST')}:27017/six-cities`;
     await this.database.connect(uri);
     this.registerMiddleware();
-    this.app.use('/api', this.offerController.router, this.userController.router, this.favoriteController.router);
+    this.app.use('/api', this.offerController.router, this.userController.router, this.favoriteController.router, this.commentController.router);
     this.app.use(createExceptionFilter(this.logger));
     const port = this.config.get('PORT');
     await new Promise<void>((resolve, reject) => {

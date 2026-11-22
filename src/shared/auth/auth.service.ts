@@ -4,6 +4,8 @@ import {Request} from 'express';
 import {StatusCodes} from 'http-status-codes';
 import {inject, injectable} from 'inversify';
 import jwt, {JwtPayload} from 'jsonwebtoken';
+import {UserModel} from '../../modules/user/user.entity.js';
+import {UserType} from '../../types/user.type.js';
 import {UserEntity} from '../../modules/user/user.entity.js';
 import {UserService} from '../../modules/user/user-service.interface.js';
 import {Config} from '../config/config.interface.js';
@@ -49,6 +51,19 @@ export class AuthService {
       throw new HttpError(StatusCodes.UNAUTHORIZED, 'Недействительный токен');
     }
     return {user, sessionId: payload.jti};
+  }
+
+  public async current(req: Request): Promise<AuthSession> {
+    const session = await this.optional(req);
+    if (session) {
+      return session;
+    }
+    const user = await UserModel.findOneAndUpdate(
+      {_id: '000000000000000000000001'},
+      {$setOnInsert: {name: 'Аноним', email: 'anonymous@local.invalid', password: randomUUID(), type: UserType.Regular}},
+      {upsert: true, new: true, setDefaultsOnInsert: true}
+    ).exec();
+    return {user, sessionId: ''};
   }
 
   public async require(req: Request): Promise<AuthSession> {
