@@ -8,7 +8,7 @@ const logger = container.get<Logger>(Component.Logger);
 const application = container.get<Application>(Component.Application);
 
 try {
-  application.init();
+  await application.init();
 } catch (error: unknown) {
   logger.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

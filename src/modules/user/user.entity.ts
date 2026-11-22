@@ -1,4 +1,5 @@
 import {getModelForClass, modelOptions, prop} from '@typegoose/typegoose';
+import {Types} from 'mongoose';
 import {UserType} from '../../types/user.type.js';
 
 @modelOptions({
@@ -18,8 +19,14 @@ export class UserEntity {
   @prop({required: true, trim: true, lowercase: true, unique: true})
   public email!: string;
 
-  @prop()
-  public avatarPath?: string;
+  @prop({default: '/img/avatar.svg'})
+  public avatarPath!: string;
+
+  @prop({default: [], type: () => [Types.ObjectId]})
+  public favorites!: Types.ObjectId[];
+
+  @prop({type: () => [String], default: []})
+  public sessions!: string[];
 
   @prop({required: true})
   public password!: string;

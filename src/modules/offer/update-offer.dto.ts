@@ -10,6 +10,7 @@ export type UpdateOfferDto = Partial<{
   previewImage: string;
   images: string[];
   isPremium: boolean;
+  rating: number;
   type: HousingType;
   rooms: number;
   guests: number;

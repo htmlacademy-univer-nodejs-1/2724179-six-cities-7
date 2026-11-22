@@ -8,8 +8,7 @@ export interface OfferService {
   find(limit?: number): Promise<DocumentType<OfferEntity>[]>;
   findById(offerId: string): Promise<DocumentType<OfferEntity> | null>;
   findPremiumByCity(city: string): Promise<DocumentType<OfferEntity>[]>;
-  findFavorites(): Promise<DocumentType<OfferEntity>[]>;
+  findFavorites(ids: string[]): Promise<DocumentType<OfferEntity>[]>;
   updateById(offerId: string, data: UpdateOfferDto): Promise<DocumentType<OfferEntity> | null>;
-  updateFavoriteStatus(offerId: string, isFavorite: boolean): Promise<DocumentType<OfferEntity> | null>;
   deleteById(offerId: string): Promise<DocumentType<OfferEntity> | null>;
 }
