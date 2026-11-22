@@ -26,7 +26,7 @@ export class Application {
 
   private registerMiddleware(): void {
     this.app.use(express.json());
-    this.app.use('/upload', express.static('uploads'));
+    this.app.use('/upload', express.static(this.config.get('UPLOAD_DIRECTORY')));
     this.app.use('/img', express.static('markup/img'));
   }
 

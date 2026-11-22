@@ -3,6 +3,7 @@ export type AppConfig = {
   DB_HOST: string;
   DB_URI: string;
   SALT: string;
+  UPLOAD_DIRECTORY: string;
 };
 
 export interface Config {
