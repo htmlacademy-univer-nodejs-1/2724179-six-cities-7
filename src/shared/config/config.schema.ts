@@ -21,6 +21,16 @@ export const configSchema: Schema<AppConfig> = {
     env: 'DB_URI',
     sensitive: true
   },
+  UPLOAD_DIRECTORY: {
+    doc: 'Каталог пользовательских файлов',
+    format: (value: unknown) => {
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        throw new Error('Укажите непустой путь к каталогу');
+      }
+    },
+    default: 'uploads',
+    env: 'UPLOAD_DIRECTORY'
+  },
   SALT: {
     doc: 'Соль для паролей',
     format: (value: unknown) => {

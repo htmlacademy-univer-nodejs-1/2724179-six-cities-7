@@ -1,10 +1,9 @@
 import {Request, Response} from 'express';
-import {StatusCodes} from 'http-status-codes';
 import {inject, injectable} from 'inversify';
 import {AuthService} from '../../shared/auth/auth.service.js';
 import {Component} from '../../shared/container/component.js';
 import {Controller} from '../../shared/controller/controller.js';
-import {HttpError} from '../../shared/errors/http-error.js';
+import {DocumentExistsMiddleware} from '../../shared/middleware/document-exists.middleware.js';
 import {createCommentSchema} from '../../shared/middleware/schemas.js';
 import {ValidateObjectIdMiddleware} from '../../shared/middleware/validate-object-id.middleware.js';
 import {ValidateMiddleware} from '../../shared/middleware/validate.middleware.js';
@@ -23,15 +22,9 @@ export class CommentController extends Controller {
   ) {
     super();
     this.addRoutes([
-      {path: '/offers/:offerId/comments', method: 'get', middleware: [new ValidateObjectIdMiddleware('offerId')], handler: this.index},
-      {path: '/offers/:offerId/comments', method: 'post', middleware: [new ValidateObjectIdMiddleware('offerId'), new ValidateMiddleware(createCommentSchema)], handler: this.create}
+      {path: '/offers/:offerId/comments', method: 'get', middleware: [new ValidateObjectIdMiddleware('offerId'), new DocumentExistsMiddleware(this.offers, 'offerId', 'Предложение')], handler: this.index},
+      {path: '/offers/:offerId/comments', method: 'post', middleware: [new ValidateObjectIdMiddleware('offerId'), new ValidateMiddleware(createCommentSchema), new DocumentExistsMiddleware(this.offers, 'offerId', 'Предложение')], handler: this.create}
     ]);
-  }
-
-  private async checkOffer(id: string): Promise<void> {
-    if (!await this.offers.findById(id)) {
-      throw new HttpError(StatusCodes.NOT_FOUND, 'Предложение не найдено');
-    }
   }
 
   private response(comment: DocumentType<CommentEntity>): object {
@@ -40,12 +33,10 @@ export class CommentController extends Controller {
   }
 
   private async index(req: Request, res: Response): Promise<void> {
-    await this.checkOffer(req.params.offerId);
     this.ok(res, (await this.comments.findByOfferId(req.params.offerId)).map((comment) => this.response(comment)));
   }
 
   private async create(req: Request, res: Response): Promise<void> {
-    await this.checkOffer(req.params.offerId);
     const session = await this.auth.current(req);
     const comment = await this.comments.create({text: req.body.text, rating: req.body.rating, offerId: req.params.offerId, userId: session.user.id});
     await comment.populate('author');

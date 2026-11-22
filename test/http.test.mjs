@@ -2,6 +2,9 @@ import 'reflect-metadata';
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
+import {mkdtemp, readdir, rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {Types} from 'mongoose';
 import {AuthService} from '../dist/shared/auth/auth.service.js';
 import {hashPassword} from '../dist/shared/auth/password.js';
@@ -56,9 +59,11 @@ test('validation, comments, anonymous access and user sessions', async () => {
     },
     async findByOfferId(id) { return comments.filter((comment) => comment.offerId === id); }
   };
+  const uploadDirectory = await mkdtemp(join(tmpdir(), 'six-cities-'));
   const app = express();
+  app.use('/upload', express.static(uploadDirectory));
   app.use(express.json());
-  app.use('/api', new OfferController(offerService, auth).router, new UserController(userService, auth).router, new FavoriteController(offerService, auth).router, new CommentController(commentService, offerService, auth).router);
+  app.use('/api', new OfferController(offerService, auth).router, new UserController(userService, auth, {get: () => uploadDirectory}).router, new FavoriteController(offerService, auth).router, new CommentController(commentService, offerService, auth).router);
   app.use(createExceptionFilter({info() {}, error() {}}));
   const server = app.listen(0);
   const base = `http://127.0.0.1:${server.address().port}/api`;
@@ -71,6 +76,21 @@ test('validation, comments, anonymous access and user sessions', async () => {
       const response = await request('/users/register', {method: 'POST', body: form});
       assert.equal(response.status, 201); assert.equal((await response.json()).password, undefined);
     }
+    const form = new FormData();
+    for (const [key, value] of Object.entries({name: 'Avatar', email: 'avatar@example.com', password: 'secret12', type: 'regular'})) { form.set(key, value); }
+    const png = Buffer.from('89504e470d0a1a0a00000000', 'hex');
+    form.set('avatar', new Blob([png], {type: 'image/png'}), 'avatar.png');
+    let uploadResponse = await request('/users/register', {method: 'POST', body: form});
+    assert.equal(uploadResponse.status, 201);
+    const avatar = (await uploadResponse.json()).avatarPath;
+    assert.match(avatar, /^\/upload\/[A-Za-z0-9_-]+\.png$/);
+    uploadResponse = await fetch(`http://127.0.0.1:${server.address().port}${avatar}`);
+    assert.deepEqual(Buffer.from(await uploadResponse.arrayBuffer()), png);
+    const invalid = new FormData();
+    for (const [key, value] of Object.entries({name: 'Invalid', email: 'invalid@example.com', password: 'secret12', type: 'regular'})) { invalid.set(key, value); }
+    invalid.set('avatar', new Blob(['not an image'], {type: 'image/png'}), 'bad.png');
+    assert.equal((await request('/users/register', {method: 'POST', body: invalid})).status, 400);
+    assert.equal((await readdir(uploadDirectory)).length, 1);
     assert.notEqual(users[0].password, 'secret12');
     let response = await request('/users/login', json('POST', {email: 'one@example.com', password: 'wrong123'})); assert.equal(response.status, 401);
     response = await request('/users/login', json('POST', {email: 'one@example.com', password: 'secret12'})); const token1 = (await response.json()).token;
@@ -95,5 +115,5 @@ test('validation, comments, anonymous access and user sessions', async () => {
     response = await request(`/offers/${offer.id}`, {method:'DELETE'}); assert.equal(response.status, 204);
     response = await request(`/offers/${offer.id}`); assert.equal(response.status, 404);
     response = await request('/users/login', {method:'POST', headers:{'content-type':'application/json'}, body:'{'}); assert.equal(response.status, 400);
-  } finally { server.close(); }
+  } finally { server.close(); await rm(uploadDirectory, {recursive: true, force: true}); }
 });

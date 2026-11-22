@@ -11,6 +11,7 @@ import {CreateOfferDto} from './create-offer.dto.js';
 import {OfferEntity} from './offer.entity.js';
 import {OfferService} from './offer-service.interface.js';
 import {toOffer, toSummary} from './offer.rdo.js';
+import {DocumentExistsMiddleware} from '../../shared/middleware/document-exists.middleware.js';
 import {ValidateMiddleware} from '../../shared/middleware/validate.middleware.js';
 import {ValidateObjectIdMiddleware} from '../../shared/middleware/validate-object-id.middleware.js';
 import {cityParamsSchema, createOfferSchema, updateOfferSchema} from '../../shared/middleware/schemas.js';
@@ -28,9 +29,9 @@ export class OfferController extends Controller {
     this.addRoutes([
       {path: '/offers', method: 'get', handler: this.index},
       {path: '/offers', method: 'post', middleware: [new ValidateMiddleware(createOfferSchema)], handler: this.create},
-      {path: '/offers/:offerId', method: 'get', middleware: [new ValidateObjectIdMiddleware('offerId')], handler: this.show},
-      {path: '/offers/:offerId', method: 'patch', middleware: [new ValidateObjectIdMiddleware('offerId'), new ValidateMiddleware(updateOfferSchema)], handler: this.update},
-      {path: '/offers/:offerId', method: 'delete', middleware: [new ValidateObjectIdMiddleware('offerId')], handler: this.delete},
+      {path: '/offers/:offerId', method: 'get', middleware: [new ValidateObjectIdMiddleware('offerId'), new DocumentExistsMiddleware(this.service, 'offerId', 'Предложение')], handler: this.show},
+      {path: '/offers/:offerId', method: 'patch', middleware: [new ValidateObjectIdMiddleware('offerId'), new ValidateMiddleware(updateOfferSchema), new DocumentExistsMiddleware(this.service, 'offerId', 'Предложение')], handler: this.update},
+      {path: '/offers/:offerId', method: 'delete', middleware: [new ValidateObjectIdMiddleware('offerId'), new DocumentExistsMiddleware(this.service, 'offerId', 'Предложение')], handler: this.delete},
       {path: '/cities/:city/offers/premium', method: 'get', middleware: [new ValidateMiddleware(cityParamsSchema, 'params')], handler: this.premium}
     ]);
   }
@@ -63,7 +64,7 @@ export class OfferController extends Controller {
 
   private async show(req: Request, res: Response): Promise<void> {
     const session = await this.auth.optional(req);
-    this.ok(res, toOffer(this.response(await this.getOffer(req.params.offerId), session)));
+    this.ok(res, toOffer(this.response(res.locals.document as DocumentType<OfferEntity>, session)));
   }
 
   private async premium(req: Request, res: Response): Promise<void> {
@@ -82,7 +83,7 @@ export class OfferController extends Controller {
 
   private async update(req: Request<ParamsDictionary, object, UpdateOfferDto>, res: Response): Promise<void> {
     const session = await this.auth.current(req);
-    const offer = await this.getOffer(req.params.offerId);
+    const offer = res.locals.document as DocumentType<OfferEntity>;
     const allowed: (keyof UpdateOfferDto)[] = ['title', 'description', 'postDate', 'city', 'previewImage', 'images', 'isPremium', 'rating', 'type', 'rooms', 'guests', 'price', 'facilities', 'location'];
     const data = Object.fromEntries(allowed.filter((key) => key in req.body).map((key) => [key, req.body[key]])) as UpdateOfferDto;
     const updated = await this.service.updateById(offer.id, data);
@@ -92,8 +93,8 @@ export class OfferController extends Controller {
     this.ok(res, toOffer(this.response(updated, session)));
   }
 
-  private async delete(req: Request, res: Response): Promise<void> {
-    const offer = await this.getOffer(req.params.offerId);
+  private async delete(_req: Request, res: Response): Promise<void> {
+    const offer = res.locals.document as DocumentType<OfferEntity>;
     await this.service.deleteById(offer.id);
     this.noContent(res);
   }
